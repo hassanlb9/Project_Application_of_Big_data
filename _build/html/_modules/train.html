@@ -1,0 +1,256 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>train &#8212; Home_default_risk  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for train</h1><div class="highlight"><pre>
+<span></span><span class="c1"># standard Python tools</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="kn">import</span> <span class="nn">os</span> 
+<span class="kn">import</span> <span class="nn">sklearn</span>
+
+<span class="c1"># preprocessing steps</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">SimpleImputer</span>
+<span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">OneHotEncoder</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+
+<span class="c1"># machine learning models and tools</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.tree</span> <span class="kn">import</span> <span class="n">DecisionTreeClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
+<span class="kn">from</span> <span class="nn">xgboost</span> <span class="kn">import</span> <span class="n">XGBClassifier</span>
+<span class="kn">from</span> <span class="nn">xgboost</span> <span class="kn">import</span> <span class="n">plot_importance</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">roc_auc_score</span><span class="p">,</span> <span class="n">roc_curve</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">KFold</span><span class="p">,</span> <span class="n">StratifiedKFold</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span><span class="p">,</span> <span class="n">cross_val_score</span>
+<span class="kn">import</span> <span class="nn">xgboost</span> <span class="k">as</span> <span class="nn">xgb</span>
+<span class="kn">from</span> <span class="nn">xgboost</span> <span class="kn">import</span> <span class="n">XGBClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">cross_val_score</span><span class="p">,</span> <span class="n">StratifiedKFold</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">roc_auc_score</span>
+
+
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">preprocessing</span>
+
+<span class="n">df_test</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span> <span class="p">(</span><span class="s2">&quot;C:</span><span class="se">\\</span><span class="s2">Users</span><span class="se">\\</span><span class="s2">Hassan</span><span class="se">\\</span><span class="s2">Documents</span><span class="se">\\</span><span class="s2">Hassan - EFREI</span><span class="se">\\</span><span class="s2">Semestre 9</span><span class="se">\\</span><span class="s2">APPLICATION OF BIG DATA</span><span class="se">\\</span><span class="s2">application_test.csv&quot;</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="p">)</span>
+<span class="n">df_test</span>
+<span class="n">df_train</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span> <span class="p">(</span><span class="s2">&quot;C:</span><span class="se">\\</span><span class="s2">Users</span><span class="se">\\</span><span class="s2">Hassan</span><span class="se">\\</span><span class="s2">Documents</span><span class="se">\\</span><span class="s2">Hassan - EFREI</span><span class="se">\\</span><span class="s2">Semestre 9</span><span class="se">\\</span><span class="s2">APPLICATION OF BIG DATA</span><span class="se">\\</span><span class="s2">application_train.csv&quot;</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="p">)</span>
+<span class="n">df_train</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">df_train</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df_test</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+<div class="viewcode-block" id="missing_values"><a class="viewcode-back" href="../docs/train.html#train.missing_values">[docs]</a><span class="k">def</span> <span class="nf">missing_values</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+    
+    <span class="n">total_missing</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">/</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">percent_missing</span> <span class="o">=</span> <span class="n">total_missing</span><span class="o">*</span><span class="mi">100</span>
+    <span class="k">return</span> <span class="n">percent_missing</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+<span class="n">df_train_mis_values</span> <span class="o">=</span> <span class="n">missing_values</span><span class="p">(</span><span class="n">df_train</span><span class="p">)</span>
+<span class="n">df_app_train_miss_values</span><span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;columns&#39;</span><span class="p">:</span> <span class="n">df_train_mis_values</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="s1">&#39;missing percent&#39;</span><span class="p">:</span> <span class="n">df_train_mis_values</span><span class="o">.</span><span class="n">values</span><span class="p">})</span>
+<span class="n">drop_columns</span> <span class="o">=</span> <span class="n">df_app_train_miss_values</span><span class="p">[</span><span class="n">df_app_train_miss_values</span><span class="p">[</span><span class="s1">&#39;missing percent&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">40</span><span class="p">][</span><span class="s1">&#39;columns&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">drop_columns</span>
+
+<span class="n">df_train</span> <span class="o">=</span> <span class="n">df_train</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">drop_columns</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">df_test</span> <span class="o">=</span> <span class="n">df_test</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">drop_columns</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">df_train</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df_test</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="n">df_train</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+
+<span class="n">df_train</span><span class="p">[</span><span class="s1">&#39;TARGET&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">dropna</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">df_train</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+<span class="n">df_train</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;object&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="o">.</span><span class="n">nunique</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Training Features shape: &#39;</span><span class="p">,</span> <span class="n">df_train</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Testing Features shape: &#39;</span><span class="p">,</span> <span class="n">df_test</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="n">df_train</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df_train</span><span class="p">)</span>
+<span class="n">df_test</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df_test</span><span class="p">)</span>
+
+<span class="c1"># Find correlations with the target and sort</span>
+<span class="n">correlations</span> <span class="o">=</span> <span class="n">df_train</span><span class="o">.</span><span class="n">corr</span><span class="p">()[</span><span class="s1">&#39;TARGET&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">()</span>
+
+<span class="c1"># Display correlations</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Most Positive Correlations:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">correlations</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="mi">15</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Most Negative Correlations:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">correlations</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+
+<span class="c1"># Preprocessing data</span>
+<span class="n">categorical_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">df_train</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">df_train</span><span class="p">[</span><span class="n">f</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">categorical_features</span><span class="p">:</span>
+    <span class="n">lb</span> <span class="o">=</span> <span class="n">preprocessing</span><span class="o">.</span><span class="n">LabelEncoder</span><span class="p">()</span>
+    <span class="n">lb</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">df_train</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;str&#39;</span><span class="p">))</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">df_test</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;str&#39;</span><span class="p">)))</span>
+    
+    <span class="n">df_train</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">lb</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">df_train</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;str&#39;</span><span class="p">)))</span>
+    <span class="n">df_test</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">lb</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">df_test</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;str&#39;</span><span class="p">)))</span>
+    
+    
+<span class="n">df_train</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Training Random Forest</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestClassifier</span>
+
+<span class="n">X_train</span> <span class="o">=</span> <span class="n">df_train</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;SK_ID_CURR&#39;</span> <span class="p">,</span> <span class="s1">&#39;TARGET&#39;</span><span class="p">]</span> <span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">Y_train</span> <span class="o">=</span> <span class="n">df_train</span><span class="p">[</span><span class="s1">&#39;TARGET&#39;</span><span class="p">]</span>
+
+<span class="n">rdf</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span> <span class="o">=</span> <span class="mi">100</span> <span class="p">,</span> <span class="n">max_depth</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">min_samples_leaf</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">max_features</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="n">rdf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span> <span class="p">,</span> <span class="n">Y_train</span><span class="p">)</span>
+
+<span class="n">features</span> <span class="o">=</span> <span class="n">df_train</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;SK_ID_CURR&#39;</span> <span class="p">,</span> <span class="s1">&#39;TARGET&#39;</span><span class="p">]</span> <span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span>
+<span class="n">features_impt_rdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rdf</span><span class="o">.</span><span class="n">feature_importances_</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;SCORE&#39;</span><span class="p">])</span>
+<span class="n">features_impt_rdf</span><span class="p">[</span><span class="s1">&#39;FEATURE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span> 
+<span class="nb">print</span><span class="p">(</span><span class="n">features_impt_rdf</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;SCORE&#39;</span><span class="p">,</span><span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+
+
+<span class="c1"># Training with XGboost</span>
+<span class="kn">import</span> <span class="nn">xgboost</span> <span class="k">as</span> <span class="nn">xgb</span>
+
+<span class="n">X_train_xgb</span> <span class="o">=</span> <span class="n">df_train</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;SK_ID_CURR&#39;</span> <span class="p">,</span> <span class="s1">&#39;TARGET&#39;</span><span class="p">]</span> <span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">])</span>
+
+<span class="n">clf_xgBoost</span> <span class="o">=</span> <span class="n">xgb</span><span class="o">.</span><span class="n">XGBClassifier</span><span class="p">(</span>
+    <span class="n">max_depth</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="n">subsample</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">colsample_bytree</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">colsample_bylevel</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">scale_pos_weight</span> <span class="o">=</span> <span class="mi">9</span><span class="p">,</span>
+    <span class="n">min_child_weight</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">reg_alpha</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="n">n_jobs</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> 
+    <span class="n">objective</span> <span class="o">=</span> <span class="s1">&#39;binary:logistic&#39;</span>
+<span class="p">)</span>
+<span class="c1"># Fit the models</span>
+<span class="n">clf_xgBoost</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train_xgb</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">preprocessing</span>
+
+<span class="n">importance_df</span> <span class="o">=</span> <span class="n">clf_xgBoost</span><span class="o">.</span><span class="n">get_booster</span><span class="p">()</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="n">importance_type</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">)</span>
+
+<span class="n">features_impt_xgb</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">importance_df</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;FEATURE&#39;</span> <span class="p">,</span> <span class="s1">&#39;SCORE&#39;</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">features_impt_xgb</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;SCORE&#39;</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Home_default_risk</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, AEH.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
